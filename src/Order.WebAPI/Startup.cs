@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Order.Data;
 using Order.Service;
+using OrderService.WebAPI.ExceptionHandlers;
 
 namespace OrderService.WebAPI
 {
@@ -25,6 +26,8 @@ namespace OrderService.WebAPI
             {
                 var serviceOptions = Configuration["OrderConnectionString"];
                 options
+                // Do not track read-only results. Update queries enable tracking when needed.
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
                 .UseLazyLoadingProxies()
                 .UseMySQL(serviceOptions);
             });
@@ -33,6 +36,8 @@ namespace OrderService.WebAPI
             services.AddScoped<IOrderRepository, OrderRepository>();
 
             services.AddControllers();
+            services.AddProblemDetails();
+            services.AddExceptionHandler<OrderDataExceptionHandler>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -42,6 +47,9 @@ namespace OrderService.WebAPI
             {
                 app.UseDeveloperExceptionPage();
             }
+
+            // Catch errors from the endpoints and pass them to the registered exception handler.
+            app.UseExceptionHandler();
 
             app.UseHttpsRedirection();
 
